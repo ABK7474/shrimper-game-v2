@@ -34,7 +34,7 @@ const SHRIMP_TYPES = [
 ];
 
 function App() {
-  const { playSound } = useSound();
+  const { playSound, playBackgroundMusic, stopBackgroundMusic } = useSound();
   
   // Tab state
   const [activeTab, setActiveTab] = useState('market');
@@ -195,6 +195,7 @@ function App() {
   // Start game
   const startGame = useCallback(() => {
     playSound('gamestart', 0.5);
+    playBackgroundMusic(); // Arka plan müziğini başlat
     setGameRunning(true);
     setGameTime(60);
     setGameScore(0);
@@ -203,16 +204,17 @@ function App() {
     setShrimp([]);
     setParticles([]);
     setActivePowerUps([]);
-  }, [playSound]);
+  }, [playSound, playBackgroundMusic]);
 
   // End game
   const endGame = useCallback(() => {
     playSound('gameover', 0.6);
+    stopBackgroundMusic(); // Arka plan müziğini durdur
     setGameRunning(false);
     if (gameLoopRef.current) {
       clearInterval(gameLoopRef.current);
     }
-  }, [playSound]);
+  }, [playSound, stopBackgroundMusic]);
 
   // Game loop
   useEffect(() => {
@@ -255,7 +257,9 @@ function App() {
         return prev - 1000;
       });
 
-      if (Math.random() < 0.3) {
+      // Her saniye en az 1 karides spawn et (75% chance + her zaman 1 tane garanti)
+      createShrimp(); // Garanti 1 karides
+      if (Math.random() < 0.75) { // %75 ihtimalle bir tane daha
         createShrimp();
       }
     }, 1000);
