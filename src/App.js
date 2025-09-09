@@ -251,26 +251,15 @@ function App() {
       <h1 style={{ color: '#4ECDC4', fontSize: '3em', margin: '0' }}>🦐 Shrimper Game 🦐</h1>
       
       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', margin: '20px 0' }}>
-  <div style={{ backgroundColor: '#334455', padding: '10px', borderRadius: '10px' }}>
-    <strong>Total Score: {score}</strong>
-  </div>
-  <div style={{ backgroundColor: '#445566', padding: '10px', borderRadius: '10px' }}>
-    <strong>Game Score: {gameScore}</strong>
-  </div>
-  <div style={{ backgroundColor: '#334455', padding: '10px', borderRadius: '10px' }}>
-    <strong>High Score: {highScore}</strong>
-  </div>
-  {gameRunning && (
-    <>
-      <div style={{ backgroundColor: '#FF6B6B', padding: '10px', borderRadius: '10px' }}>
-        <strong>Time: {gameTime}s</strong>
-      </div>
-      <div style={{ backgroundColor: '#FFD93D', padding: '10px', borderRadius: '10px', color: 'black' }}>
-        <strong>Combo: x{combo}</strong>
-      </div>
-    </>
-  )}
-</div>
+        <div style={{ backgroundColor: '#334455', padding: '10px', borderRadius: '10px' }}>
+          <strong>Total Score: {score}</strong>
+        </div>
+        <div style={{ backgroundColor: '#445566', padding: '10px', borderRadius: '10px' }}>
+          <strong>Game Score: {gameScore}</strong>
+        </div>
+        <div style={{ backgroundColor: '#334455', padding: '10px', borderRadius: '10px' }}>
+          <strong>High Score: {highScore}</strong>
+        </div>
         {gameRunning && (
           <>
             <div style={{ backgroundColor: '#FF6B6B', padding: '10px', borderRadius: '10px' }}>
@@ -304,6 +293,7 @@ function App() {
           <div
             key={s.id}
             onClick={(e) => catchShrimp(s.id, e)}
+            className="shrimp-bounce"
             style={{
               position: 'absolute',
               left: s.x,
@@ -318,7 +308,6 @@ function App() {
               justifyContent: 'center',
               fontSize: '20px',
               boxShadow: '0 0 10px rgba(0,0,0,0.3)',
-              animation: 'bounce 2s infinite',
               border: s.type.rare ? '2px solid gold' : 'none',
             }}
           >
@@ -464,14 +453,6 @@ function App() {
           <p>High Score: {highScore}</p>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes bounce {
-          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-10px); }
-          60% { transform: translateY(-5px); }
-        }
-      `}</style>
     </div>
   );
 }
