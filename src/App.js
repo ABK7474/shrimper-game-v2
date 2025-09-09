@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-
+import "./App.css";
+import { useSound } from './hooks/useSound';
 // Game configuration
 const GAME_CONFIG = {
   gameArea: { width: 800, height: 600 },
@@ -32,6 +33,7 @@ const SHRIMP_TYPES = [
 ];
 
 function App() {
+  const { playSound } = useSound();
   // Game state
   const [score, setScore] = useState(() => 
     Number(localStorage.getItem("shrimp-score")) || 0
@@ -110,7 +112,7 @@ function App() {
     
     const shrimpToCatch = shrimp.find(s => s.id === shrimpId);
     if (!shrimpToCatch) return;
-    
+    playSound('catch', 0.3);
     const basePoints = shrimpToCatch.type.points;
     const skinMultiplier = currentSkin.multiplier;
     const comboMultiplier = Math.min(1 + combo * 0.1, 3);
@@ -122,21 +124,29 @@ function App() {
     setShrimpCaught(prev => prev + 1);
     setCombo(prev => prev + 1);
     setComboTimer(3000); // 3 seconds combo timer
-    
+    if (combo > 2) {
+    playSound('combo', 0.4);
+  }
     // Create particles at shrimp position
     createParticles(shrimpToCatch.x + 25, shrimpToCatch.y + 25, totalPoints);
     
     // Remove caught shrimp
     setShrimp(prev => prev.filter(s => s.id !== shrimpId));
-  }, [shrimp, currentSkin, combo, activePowerUps, createParticles]);
+  }, [shrimp, currentSkin, combo, activePowerUps, createParticles, playSound]);
 
   // Buy skin
   const buySkin = useCallback((skin) => {
     if (score >= skin.cost) {
+      // BAŞARILI SATIN ALMA SESİ
+      playSound('purchase', 0.3);
       setScore(prev => prev - skin.cost);
       setCurrentSkin(skin);
-    }
-  }, [score]);
+    } else {
+      // HATA SESİ
+      playSound('error', 0.2);
+      alert("Not enough points!");
+  }
+}, [score, playSound]);
 
   // Buy power-up
   const buyPowerUp = useCallback((powerUp) => {
@@ -148,6 +158,7 @@ function App() {
 
   // Start game
   const startGame = useCallback(() => {
+    playSound('gamestart', 0.5);
     setGameRunning(true);
     setGameTime(60);
     setScore(0);
@@ -156,15 +167,16 @@ function App() {
     setShrimp([]);
     setParticles([]);
     setActivePowerUps([]);
-  }, []);
+  }, [playSound]);
 
   // End game
   const endGame = useCallback(() => {
+    playSound('gameover', 0.6);
     setGameRunning(false);
     if (gameLoopRef.current) {
       clearInterval(gameLoopRef.current);
     }
-  }, []);
+  }, [playSound]);
 
   // Game loop
   useEffect(() => {
