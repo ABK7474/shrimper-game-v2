@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import "./App.css";
 import { useSound } from './hooks/useSound';
+
 // Game configuration
 const GAME_CONFIG = {
   gameArea: { width: 800, height: 600 },
@@ -34,16 +35,20 @@ const SHRIMP_TYPES = [
 
 function App() {
   const { playSound } = useSound();
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState('market');
+  
   // Game state
   const [score, setScore] = useState(() => 
     Number(localStorage.getItem("shrimp-score")) || 0
   );
-  const [gameScore, setGameScore] = useState(0); // Oyun içi skor
+  const [gameScore, setGameScore] = useState(0);
   const [highScore, setHighScore] = useState(() => 
     Number(localStorage.getItem("shrimp-high")) || 0
   );
   const [gameRunning, setGameRunning] = useState(false);
-  const [gameTime, setGameTime] = useState(60); // 60 seconds game time
+  const [gameTime, setGameTime] = useState(60);
   const [currentSkin, setCurrentSkin] = useState(SKINS[0]);
   
   // Game objects
@@ -114,6 +119,7 @@ function App() {
     const shrimpToCatch = shrimp.find(s => s.id === shrimpId);
     if (!shrimpToCatch) return;
     playSound('catch', 0.3);
+    
     const basePoints = shrimpToCatch.type.points;
     const skinMultiplier = currentSkin.multiplier;
     const comboMultiplier = Math.min(1 + combo * 0.1, 3);
@@ -121,42 +127,43 @@ function App() {
     
     const totalPoints = Math.floor(basePoints * skinMultiplier * comboMultiplier * powerUpMultiplier);
     
-    setScore(prev => prev + totalPoints);        // Toplam skor (birikmeli)
-    setGameScore(prev => prev + totalPoints);    // Oyun içi skor
+    setScore(prev => prev + totalPoints);
+    setGameScore(prev => prev + totalPoints);
     setShrimpCaught(prev => prev + 1);
     setCombo(prev => prev + 1);
-    setComboTimer(3000); // 3 seconds combo timer
-    if (combo > 2) {
-    playSound('combo', 0.4);
-  }
-    // Create particles at shrimp position
-    createParticles(shrimpToCatch.x + 25, shrimpToCatch.y + 25, totalPoints);
+    setComboTimer(3000);
     
-    // Remove caught shrimp
+    if (combo > 2) {
+      playSound('combo', 0.4);
+    }
+    
+    createParticles(shrimpToCatch.x + 25, shrimpToCatch.y + 25, totalPoints);
     setShrimp(prev => prev.filter(s => s.id !== shrimpId));
   }, [shrimp, currentSkin, combo, activePowerUps, createParticles, playSound]);
 
   // Buy skin
   const buySkin = useCallback((skin) => {
     if (score >= skin.cost) {
-      // BAŞARILI SATIN ALMA SESİ
       playSound('purchase', 0.3);
       setScore(prev => prev - skin.cost);
       setCurrentSkin(skin);
     } else {
-      // HATA SESİ
       playSound('error', 0.2);
       alert("Not enough points!");
-  }
-}, [score, playSound]);
+    }
+  }, [score, playSound]);
 
   // Buy power-up
   const buyPowerUp = useCallback((powerUp) => {
     if (score >= powerUp.cost) {
+      playSound('purchase', 0.3);
       setScore(prev => prev - powerUp.cost);
       setActivePowerUps(prev => [...prev, { ...powerUp, timeLeft: powerUp.duration }]);
+    } else {
+      playSound('error', 0.2);
+      alert("Not enough points!");
     }
-  }, [score]);
+  }, [score, playSound]);
 
   // Start game
   const startGame = useCallback(() => {
@@ -185,7 +192,6 @@ function App() {
     if (!gameRunning) return;
 
     gameLoopRef.current = setInterval(() => {
-      // Update game time
       setGameTime(prev => {
         if (prev <= 1) {
           endGame();
@@ -194,7 +200,6 @@ function App() {
         return prev - 1;
       });
 
-      // Update shrimp positions and lifetime
       setShrimp(prev => prev.map(s => ({
         ...s,
         x: Math.max(0, Math.min(GAME_CONFIG.gameArea.width - 50, s.x + s.vx)),
@@ -202,7 +207,6 @@ function App() {
         life: s.life - 1000,
       })).filter(s => s.life > 0));
 
-      // Update particles
       setParticles(prev => prev.map(p => ({
         ...p,
         x: p.x + p.vx,
@@ -211,13 +215,11 @@ function App() {
         opacity: p.life / 1000,
       })).filter(p => p.life > 0));
 
-      // Update power-ups
       setActivePowerUps(prev => prev.map(p => ({
         ...p,
         timeLeft: p.timeLeft - 1000,
       })).filter(p => p.timeLeft > 0));
 
-      // Update combo timer
       setComboTimer(prev => {
         if (prev <= 1000) {
           setCombo(0);
@@ -226,7 +228,6 @@ function App() {
         return prev - 1000;
       });
 
-      // Spawn new shrimp
       if (Math.random() < 0.3) {
         createShrimp();
       }
@@ -238,6 +239,31 @@ function App() {
       }
     };
   }, [gameRunning, endGame, createShrimp]);
+
+  // Tab button style
+  const getTabButtonStyle = (tabName) => ({
+    padding: '15px 25px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    backgroundColor: activeTab === tabName ? '#4ECDC4' : '#334455',
+    color: activeTab === tabName ? '#001122' : 'white',
+    border: 'none',
+    borderRadius: '10px 10px 0 0',
+    cursor: 'pointer',
+    marginRight: '5px',
+    transition: 'all 0.3s ease',
+    transform: activeTab === tabName ? 'translateY(-2px)' : 'none',
+    boxShadow: activeTab === tabName ? '0 4px 8px rgba(0,0,0,0.3)' : 'none'
+  });
+
+  // Tab content style
+  const tabContentStyle = {
+    backgroundColor: '#334455',
+    padding: '30px',
+    borderRadius: '0 15px 15px 15px',
+    minHeight: '400px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+  };
 
   return (
     <div style={{ 
@@ -388,69 +414,180 @@ function App() {
         </div>
       )}
 
-      {/* Shop */}
-      <div style={{ margin: '30px 0', display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
-        {/* Skins */}
-        <div style={{ backgroundColor: '#334455', padding: '20px', borderRadius: '15px', minWidth: '200px' }}>
-          <h3>🎨 Skins</h3>
-          <p>Current: <span style={{ color: currentSkin.color }}>●</span> {currentSkin.name} (x{currentSkin.multiplier})</p>
-          {SKINS.map(skin => (
-            <div key={skin.name} style={{ margin: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>
-                <span style={{ color: skin.color }}>●</span> {skin.name} (x{skin.multiplier}) - {skin.cost}🦐
-              </span>
-              <button
-                onClick={() => buySkin(skin)}
-                disabled={score < skin.cost || currentSkin.name === skin.name}
-                style={{
-                  padding: '5px 10px',
-                  backgroundColor: score >= skin.cost && currentSkin.name !== skin.name ? '#4ECDC4' : '#666',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: score >= skin.cost && currentSkin.name !== skin.name ? 'pointer' : 'not-allowed',
-                  fontSize: '12px'
-                }}
-              >
-                {currentSkin.name === skin.name ? 'Equipped' : 'Buy'}
-              </button>
-            </div>
-          ))}
+      {/* Tab Navigation */}
+      <div style={{ margin: '30px auto', maxWidth: '800px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0' }}>
+          <button
+            onClick={() => setActiveTab('market')}
+            style={getTabButtonStyle('market')}
+          >
+            🎨 Market
+          </button>
+          <button
+            onClick={() => setActiveTab('powerups')}
+            style={getTabButtonStyle('powerups')}
+          >
+            ⚡ Power-ups
+          </button>
+          <button
+            onClick={() => setActiveTab('stats')}
+            style={getTabButtonStyle('stats')}
+          >
+            📊 Stats
+          </button>
         </div>
 
-        {/* Power-ups */}
-        <div style={{ backgroundColor: '#334455', padding: '20px', borderRadius: '15px', minWidth: '200px' }}>
-          <h3>⚡ Power-ups</h3>
-          {POWER_UPS.map(powerUp => (
-            <div key={powerUp.name} style={{ margin: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '12px' }}>
-                {powerUp.name} - {powerUp.cost}🦐
-              </span>
-              <button
-                onClick={() => buyPowerUp(powerUp)}
-                disabled={score < powerUp.cost}
-                style={{
-                  padding: '5px 10px',
-                  backgroundColor: score >= powerUp.cost ? '#FFD93D' : '#666',
-                  color: 'black',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: score >= powerUp.cost ? 'pointer' : 'not-allowed',
-                  fontSize: '12px'
-                }}
-              >
-                Buy
-              </button>
+        {/* Tab Content */}
+        <div style={tabContentStyle}>
+          {/* Market Tab */}
+          {activeTab === 'market' && (
+            <div>
+              <h3 style={{ color: '#4ECDC4', marginTop: '0' }}>🎨 Shrimp Skins Market</h3>
+              <p style={{ marginBottom: '20px' }}>
+                Current Skin: <span style={{ color: currentSkin.color }}>●</span> {currentSkin.name} 
+                <span style={{ color: '#FFD93D' }}> (x{currentSkin.multiplier} Points Multiplier)</span>
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
+                {SKINS.map(skin => (
+                  <div key={skin.name} style={{
+                    backgroundColor: '#445566',
+                    padding: '20px',
+                    borderRadius: '10px',
+                    border: currentSkin.name === skin.name ? '3px solid #4ECDC4' : '2px solid transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px' }}>
+                        <span style={{ color: skin.color, fontSize: '24px' }}>●</span> {skin.name}
+                      </div>
+                      <div style={{ color: '#FFD93D', fontSize: '14px' }}>
+                        x{skin.multiplier} Points Multiplier
+                      </div>
+                      <div style={{ color: '#4ECDC4', fontSize: '16px', marginTop: '5px' }}>
+                        {skin.cost === 0 ? 'FREE' : `${skin.cost} 🦐`}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => buySkin(skin)}
+                      disabled={score < skin.cost || currentSkin.name === skin.name}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: currentSkin.name === skin.name ? '#666' : (score >= skin.cost ? '#4ECDC4' : '#666'),
+                        color: currentSkin.name === skin.name ? '#ccc' : (score >= skin.cost ? '#001122' : '#ccc'),
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: score >= skin.cost && currentSkin.name !== skin.name ? 'pointer' : 'not-allowed',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {currentSkin.name === skin.name ? 'EQUIPPED' : 'BUY'}
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
+          )}
 
-        {/* Stats */}
-        <div style={{ backgroundColor: '#334455', padding: '20px', borderRadius: '15px', minWidth: '200px' }}>
-          <h3>📊 Stats</h3>
-          <p>Shrimp Caught: {shrimpCaught}</p>
-          <p>Current Combo: x{combo}</p>
-          <p>High Score: {highScore}</p>
+          {/* Power-ups Tab */}
+          {activeTab === 'powerups' && (
+            <div>
+              <h3 style={{ color: '#FFD93D', marginTop: '0' }}>⚡ Power-ups Store</h3>
+              <p style={{ marginBottom: '20px' }}>
+                Boost your shrimp catching abilities with these temporary power-ups!
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
+                {POWER_UPS.map(powerUp => (
+                  <div key={powerUp.name} style={{
+                    backgroundColor: '#445566',
+                    padding: '20px',
+                    borderRadius: '10px',
+                    border: '2px solid #FFD93D',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px', color: '#FFD93D' }}>
+                        ⚡ {powerUp.name}
+                      </div>
+                      <div style={{ color: '#ccc', fontSize: '14px', marginBottom: '5px' }}>
+                        Duration: {powerUp.duration / 1000} seconds
+                      </div>
+                      <div style={{ color: '#4ECDC4', fontSize: '16px' }}>
+                        {powerUp.cost} 🦐
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => buyPowerUp(powerUp)}
+                      disabled={score < powerUp.cost}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: score >= powerUp.cost ? '#FFD93D' : '#666',
+                        color: score >= powerUp.cost ? '#001122' : '#ccc',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: score >= powerUp.cost ? 'pointer' : 'not-allowed',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      BUY
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Stats Tab */}
+          {activeTab === 'stats' && (
+            <div>
+              <h3 style={{ color: '#A8E6CF', marginTop: '0' }}>📊 Game Statistics</h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginTop: '30px' }}>
+                <div style={{
+                  backgroundColor: '#445566',
+                  padding: '25px',
+                  borderRadius: '10px',
+                  border: '2px solid #4ECDC4'
+                }}>
+                  <h4 style={{ color: '#4ECDC4', margin: '0 0 15px 0' }}>💰 Score Stats</h4>
+                  <p><strong>Total Score:</strong> {score} 🦐</p>
+                  <p><strong>Game Score:</strong> {gameScore} 🦐</p>
+                  <p><strong>High Score:</strong> {highScore} 🦐</p>
+                </div>
+                
+                <div style={{
+                  backgroundColor: '#445566',
+                  padding: '25px',
+                  borderRadius: '10px',
+                  border: '2px solid #FF6B6B'
+                }}>
+                  <h4 style={{ color: '#FF6B6B', margin: '0 0 15px 0' }}>🎯 Game Stats</h4>
+                  <p><strong>Shrimp Caught:</strong> {shrimpCaught}</p>
+                  <p><strong>Current Combo:</strong> x{combo}</p>
+                  <p><strong>Active Power-ups:</strong> {activePowerUps.length}</p>
+                </div>
+                
+                <div style={{
+                  backgroundColor: '#445566',
+                  padding: '25px',
+                  borderRadius: '10px',
+                  border: '2px solid #FFD93D'
+                }}>
+                  <h4 style={{ color: '#FFD93D', margin: '0 0 15px 0' }}>🎨 Current Setup</h4>
+                  <p><strong>Active Skin:</strong> {currentSkin.name}</p>
+                  <p><strong>Points Multiplier:</strong> x{currentSkin.multiplier}</p>
+                  <p><strong>Skin Color:</strong> <span style={{ color: currentSkin.color }}>●</span></p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
