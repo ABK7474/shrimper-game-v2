@@ -43,6 +43,9 @@ function App() {
   const [score, setScore] = useState(() => 
     Number(localStorage.getItem("shrimp-score")) || 0
   );
+  const [xanTokens, setXanTokens] = useState(() => 
+    Number(localStorage.getItem("xan-tokens")) || 0
+  );
   const [gameScore, setGameScore] = useState(0);
   const [highScore, setHighScore] = useState(() => 
     Number(localStorage.getItem("shrimp-high")) || 0
@@ -69,11 +72,12 @@ function App() {
   // Save score to localStorage
   useEffect(() => {
     localStorage.setItem("shrimp-score", score.toString());
+    localStorage.setItem("xan-tokens", xanTokens.toString());
     if (score > highScore) {
       setHighScore(score);
       localStorage.setItem("shrimp-high", score.toString());
     }
-  }, [score, highScore]);
+  }, [score, xanTokens, highScore]);
 
   // Generate random shrimp
   const createShrimp = useCallback(() => {
@@ -143,25 +147,48 @@ function App() {
 
   // Buy skin
   const buySkin = useCallback((skin) => {
-    if (score >= skin.cost) {
+    if (score >= skin.cost && xanTokens >= 1) {
       playSound('purchase', 0.3);
       setScore(prev => prev - skin.cost);
+      setXanTokens(prev => prev - 1); // 1 XAN fee
       setCurrentSkin(skin);
     } else {
       playSound('error', 0.2);
-      alert("Not enough points!");
+      if (score < skin.cost) {
+        alert("Not enough points!");
+      } else {
+        alert("Not enough XAN tokens for transaction fee!");
+      }
     }
-  }, [score, playSound]);
+  }, [score, xanTokens, playSound]);
 
   // Buy power-up
   const buyPowerUp = useCallback((powerUp) => {
-    if (score >= powerUp.cost) {
+    if (score >= powerUp.cost && xanTokens >= 1) {
       playSound('purchase', 0.3);
       setScore(prev => prev - powerUp.cost);
+      setXanTokens(prev => prev - 1); // 1 XAN fee
       setActivePowerUps(prev => [...prev, { ...powerUp, timeLeft: powerUp.duration }]);
     } else {
       playSound('error', 0.2);
-      alert("Not enough points!");
+      if (score < powerUp.cost) {
+        alert("Not enough points!");
+      } else {
+        alert("Not enough XAN tokens for transaction fee!");
+      }
+    }
+  }, [score, xanTokens, playSound]);
+
+  // Convert score to XAN tokens
+  const convertToXAN = useCallback((amount) => {
+    const scoreNeeded = amount * 5; // 5 score = 1 XAN
+    if (score >= scoreNeeded) {
+      playSound('purchase', 0.3);
+      setScore(prev => prev - scoreNeeded);
+      setXanTokens(prev => prev + amount);
+    } else {
+      playSound('error', 0.2);
+      alert("Not enough points to convert!");
     }
   }, [score, playSound]);
 
@@ -281,9 +308,12 @@ function App() {
           <strong>Total Score: {score}</strong>
         </div>
         <div style={{ backgroundColor: '#445566', padding: '10px', borderRadius: '10px' }}>
-          <strong>Game Score: {gameScore}</strong>
+          <strong>XAN Tokens: {xanTokens}</strong>
         </div>
         <div style={{ backgroundColor: '#334455', padding: '10px', borderRadius: '10px' }}>
+          <strong>Game Score: {gameScore}</strong>
+        </div>
+        <div style={{ backgroundColor: '#445566', padding: '10px', borderRadius: '10px' }}>
           <strong>High Score: {highScore}</strong>
         </div>
         {gameRunning && (
@@ -418,6 +448,12 @@ function App() {
       <div style={{ margin: '30px auto', maxWidth: '800px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0' }}>
           <button
+            onClick={() => setActiveTab('intentmachine')}
+            style={getTabButtonStyle('intentmachine')}
+          >
+            🔄 Intent Machine
+          </button>
+          <button
             onClick={() => setActiveTab('market')}
             style={getTabButtonStyle('market')}
           >
@@ -439,6 +475,81 @@ function App() {
 
         {/* Tab Content */}
         <div style={tabContentStyle}>
+          {/* Intent Machine Tab */}
+          {activeTab === 'intentmachine' && (
+            <div>
+              <h3 style={{ color: '#9B59B6', marginTop: '0' }}>🔄 Intent Machine</h3>
+              <p style={{ marginBottom: '30px', fontSize: '16px', lineHeight: '1.6' }}>
+                Convert your earned points to XAN tokens! XAN tokens are required as transaction fees 
+                for all purchases in the Market and Power-ups sections.
+              </p>
+              
+              <div style={{ 
+                backgroundColor: '#445566', 
+                padding: '25px', 
+                borderRadius: '15px', 
+                marginBottom: '30px',
+                border: '2px solid #9B59B6' 
+              }}>
+                <h4 style={{ color: '#9B59B6', marginTop: '0' }}>💱 Conversion Rate</h4>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#4ECDC4' }}>
+                  5 🦐 Points = 1 XAN Token
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                {/* Quick conversion buttons */}
+                {[1, 5, 10, 25].map(amount => (
+                  <div key={amount} style={{
+                    backgroundColor: '#445566',
+                    padding: '20px',
+                    borderRadius: '10px',
+                    border: '2px solid #9B59B6',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '10px', color: '#9B59B6' }}>
+                      Convert {amount} XAN
+                    </div>
+                    <div style={{ color: '#ccc', fontSize: '14px', marginBottom: '15px' }}>
+                      Cost: {amount * 5} 🦐 Points
+                    </div>
+                    <button
+                      onClick={() => convertToXAN(amount)}
+                      disabled={score < amount * 5}
+                      style={{
+                        padding: '12px 20px',
+                        backgroundColor: score >= amount * 5 ? '#9B59B6' : '#666',
+                        color: score >= amount * 5 ? 'white' : '#ccc',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: score >= amount * 5 ? 'pointer' : 'not-allowed',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        width: '100%'
+                      }}
+                    >
+                      CONVERT
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ 
+                backgroundColor: '#2C3E50', 
+                padding: '20px', 
+                borderRadius: '10px', 
+                marginTop: '30px',
+                border: '1px solid #34495E'
+              }}>
+                <h4 style={{ color: '#E74C3C', marginTop: '0' }}>⚠️ Transaction Fees</h4>
+                <p style={{ margin: '0', color: '#BDC3C7' }}>
+                  Every purchase in Market and Power-ups requires 1 XAN token as a transaction fee. 
+                  Make sure you have enough XAN tokens before making purchases!
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Market Tab */}
           {activeTab === 'market' && (
             <div>
@@ -446,6 +557,8 @@ function App() {
               <p style={{ marginBottom: '20px' }}>
                 Current Skin: <span style={{ color: currentSkin.color }}>●</span> {currentSkin.name} 
                 <span style={{ color: '#FFD93D' }}> (x{currentSkin.multiplier} Points Multiplier)</span>
+                <br />
+                <span style={{ color: '#E74C3C', fontSize: '14px' }}>⚠️ All purchases require 1 XAN token as transaction fee</span>
               </p>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
@@ -467,19 +580,21 @@ function App() {
                         x{skin.multiplier} Points Multiplier
                       </div>
                       <div style={{ color: '#4ECDC4', fontSize: '16px', marginTop: '5px' }}>
-                        {skin.cost === 0 ? 'FREE' : `${skin.cost} 🦐`}
+                        {skin.cost === 0 ? 'FREE' : `${skin.cost} 🦐 + 1 XAN fee`}
                       </div>
                     </div>
                     <button
                       onClick={() => buySkin(skin)}
-                      disabled={score < skin.cost || currentSkin.name === skin.name}
+                      disabled={(score < skin.cost || (skin.cost > 0 && xanTokens < 1)) || currentSkin.name === skin.name}
                       style={{
                         padding: '10px 20px',
-                        backgroundColor: currentSkin.name === skin.name ? '#666' : (score >= skin.cost ? '#4ECDC4' : '#666'),
-                        color: currentSkin.name === skin.name ? '#ccc' : (score >= skin.cost ? '#001122' : '#ccc'),
+                        backgroundColor: currentSkin.name === skin.name ? '#666' : 
+                          ((score >= skin.cost && (skin.cost === 0 || xanTokens >= 1)) ? '#4ECDC4' : '#666'),
+                        color: currentSkin.name === skin.name ? '#ccc' : 
+                          ((score >= skin.cost && (skin.cost === 0 || xanTokens >= 1)) ? '#001122' : '#ccc'),
                         border: 'none',
                         borderRadius: '8px',
-                        cursor: score >= skin.cost && currentSkin.name !== skin.name ? 'pointer' : 'not-allowed',
+                        cursor: ((score >= skin.cost && (skin.cost === 0 || xanTokens >= 1)) && currentSkin.name !== skin.name) ? 'pointer' : 'not-allowed',
                         fontSize: '14px',
                         fontWeight: 'bold'
                       }}
@@ -498,6 +613,8 @@ function App() {
               <h3 style={{ color: '#FFD93D', marginTop: '0' }}>⚡ Power-ups Store</h3>
               <p style={{ marginBottom: '20px' }}>
                 Boost your shrimp catching abilities with these temporary power-ups!
+                <br />
+                <span style={{ color: '#E74C3C', fontSize: '14px' }}>⚠️ All purchases require 1 XAN token as transaction fee</span>
               </p>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
@@ -519,19 +636,19 @@ function App() {
                         Duration: {powerUp.duration / 1000} seconds
                       </div>
                       <div style={{ color: '#4ECDC4', fontSize: '16px' }}>
-                        {powerUp.cost} 🦐
+                        {powerUp.cost} 🦐 + 1 XAN fee
                       </div>
                     </div>
                     <button
                       onClick={() => buyPowerUp(powerUp)}
-                      disabled={score < powerUp.cost}
+                      disabled={score < powerUp.cost || xanTokens < 1}
                       style={{
                         padding: '10px 20px',
-                        backgroundColor: score >= powerUp.cost ? '#FFD93D' : '#666',
-                        color: score >= powerUp.cost ? '#001122' : '#ccc',
+                        backgroundColor: (score >= powerUp.cost && xanTokens >= 1) ? '#FFD93D' : '#666',
+                        color: (score >= powerUp.cost && xanTokens >= 1) ? '#001122' : '#ccc',
                         border: 'none',
                         borderRadius: '8px',
-                        cursor: score >= powerUp.cost ? 'pointer' : 'not-allowed',
+                        cursor: (score >= powerUp.cost && xanTokens >= 1) ? 'pointer' : 'not-allowed',
                         fontSize: '14px',
                         fontWeight: 'bold'
                       }}
@@ -558,6 +675,7 @@ function App() {
                 }}>
                   <h4 style={{ color: '#4ECDC4', margin: '0 0 15px 0' }}>💰 Score Stats</h4>
                   <p><strong>Total Score:</strong> {score} 🦐</p>
+                  <p><strong>XAN Tokens:</strong> {xanTokens} XAN</p>
                   <p><strong>Game Score:</strong> {gameScore} 🦐</p>
                   <p><strong>High Score:</strong> {highScore} 🦐</p>
                 </div>
