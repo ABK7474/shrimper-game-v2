@@ -38,6 +38,7 @@ function App() {
   const [score, setScore] = useState(() => 
     Number(localStorage.getItem("shrimp-score")) || 0
   );
+  const [gameScore, setGameScore] = useState(0); // Oyun içi skor
   const [highScore, setHighScore] = useState(() => 
     Number(localStorage.getItem("shrimp-high")) || 0
   );
@@ -120,7 +121,8 @@ function App() {
     
     const totalPoints = Math.floor(basePoints * skinMultiplier * comboMultiplier * powerUpMultiplier);
     
-    setScore(prev => prev + totalPoints);
+    setScore(prev => prev + totalPoints);        // Toplam skor (birikmeli)
+    setGameScore(prev => prev + totalPoints);    // Oyun içi skor
     setShrimpCaught(prev => prev + 1);
     setCombo(prev => prev + 1);
     setComboTimer(3000); // 3 seconds combo timer
@@ -161,7 +163,7 @@ function App() {
     playSound('gamestart', 0.5);
     setGameRunning(true);
     setGameTime(60);
-    setScore(0);
+    setGameScore(0);
     setShrimpCaught(0);
     setCombo(0);
     setShrimp([]);
@@ -249,12 +251,26 @@ function App() {
       <h1 style={{ color: '#4ECDC4', fontSize: '3em', margin: '0' }}>🦐 Shrimper Game 🦐</h1>
       
       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', margin: '20px 0' }}>
-        <div style={{ backgroundColor: '#334455', padding: '10px', borderRadius: '10px' }}>
-          <strong>Score: {score}</strong>
-        </div>
-        <div style={{ backgroundColor: '#334455', padding: '10px', borderRadius: '10px' }}>
-          <strong>High Score: {highScore}</strong>
-        </div>
+  <div style={{ backgroundColor: '#334455', padding: '10px', borderRadius: '10px' }}>
+    <strong>Total Score: {score}</strong>
+  </div>
+  <div style={{ backgroundColor: '#445566', padding: '10px', borderRadius: '10px' }}>
+    <strong>Game Score: {gameScore}</strong>
+  </div>
+  <div style={{ backgroundColor: '#334455', padding: '10px', borderRadius: '10px' }}>
+    <strong>High Score: {highScore}</strong>
+  </div>
+  {gameRunning && (
+    <>
+      <div style={{ backgroundColor: '#FF6B6B', padding: '10px', borderRadius: '10px' }}>
+        <strong>Time: {gameTime}s</strong>
+      </div>
+      <div style={{ backgroundColor: '#FFD93D', padding: '10px', borderRadius: '10px', color: 'black' }}>
+        <strong>Combo: x{combo}</strong>
+      </div>
+    </>
+  )}
+</div>
         {gameRunning && (
           <>
             <div style={{ backgroundColor: '#FF6B6B', padding: '10px', borderRadius: '10px' }}>
