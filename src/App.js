@@ -489,9 +489,9 @@ function App() {
         return prev - 1000;
       });
 
-      // Her saniye en az 1 karides spawn et (75% chance + her zaman 1 tane garanti)
-      createShrimp(); // Garanti 1 karides
-      if (Math.random() < 0.75) { // %75 ihtimalle bir tane daha
+      // Her saniye en az 1 karides spawn et
+      createShrimp();
+      if (Math.random() < 0.75) {
         createShrimp();
       }
     }, 1000);
@@ -774,161 +774,7 @@ function App() {
                           borderRadius: '8px',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'space-between'
-                  }}>
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px' }}>
-                        <span style={{ color: skin.color, fontSize: '24px' }}>●</span> {skin.name}
-                      </div>
-                      <div style={{ color: '#FFD93D', fontSize: '14px' }}>
-                        x{skin.multiplier} Points Multiplier
-                      </div>
-                      <div style={{ color: '#4ECDC4', fontSize: '16px', marginTop: '5px' }}>
-                        {skin.cost === 0 ? 'FREE' : `${skin.cost} 🦐 + 1 XAN fee`}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => buySkin(skin)}
-                      disabled={(score < skin.cost || (skin.cost > 0 && xanTokens < 1)) || currentSkin.name === skin.name}
-                      style={{
-                        padding: '10px 20px',
-                        backgroundColor: currentSkin.name === skin.name ? '#666' : 
-                          ((score >= skin.cost && (skin.cost === 0 || xanTokens >= 1)) ? '#4ECDC4' : '#666'),
-                        color: currentSkin.name === skin.name ? '#ccc' : 
-                          ((score >= skin.cost && (skin.cost === 0 || xanTokens >= 1)) ? '#001122' : '#ccc'),
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: ((score >= skin.cost && (skin.cost === 0 || xanTokens >= 1)) && currentSkin.name !== skin.name) ? 'pointer' : 'not-allowed',
-                        fontSize: '14px',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      {currentSkin.name === skin.name ? 'EQUIPPED' : 'BUY'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Power-ups Tab */}
-          {activeTab === 'powerups' && (
-            <div>
-              <h3 style={{ color: '#FFD93D', marginTop: '0' }}>⚡ Power-ups Store</h3>
-              <p style={{ marginBottom: '20px' }}>
-                Boost your shrimp catching abilities with these temporary power-ups!
-                <br />
-                <span style={{ color: '#E74C3C', fontSize: '14px' }}>⚠️ All purchases require 1 XAN token as transaction fee</span>
-              </p>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
-                {POWER_UPS.map(powerUp => (
-                  <div key={powerUp.name} style={{
-                    backgroundColor: '#445566',
-                    padding: '20px',
-                    borderRadius: '10px',
-                    border: '2px solid #FFD93D',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                  }}>
-                    <div style={{ textAlign: 'left' }}>
-                      <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px', color: '#FFD93D' }}>
-                        ⚡ {powerUp.name}
-                      </div>
-                      <div style={{ color: '#ccc', fontSize: '14px', marginBottom: '5px' }}>
-                        Duration: {powerUp.duration / 1000} seconds
-                      </div>
-                      <div style={{ color: '#4ECDC4', fontSize: '16px' }}>
-                        {powerUp.cost} 🦐 + 1 XAN fee
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => buyPowerUp(powerUp)}
-                      disabled={score < powerUp.cost || xanTokens < 1}
-                      style={{
-                        padding: '10px 20px',
-                        backgroundColor: (score >= powerUp.cost && xanTokens >= 1) ? '#FFD93D' : '#666',
-                        color: (score >= powerUp.cost && xanTokens >= 1) ? '#001122' : '#ccc',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: (score >= powerUp.cost && xanTokens >= 1) ? 'pointer' : 'not-allowed',
-                        fontSize: '14px',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      BUY
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Stats Tab */}
-          {activeTab === 'stats' && (
-            <div>
-              <h3 style={{ color: '#A8E6CF', marginTop: '0' }}>📊 Game Statistics</h3>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginTop: '30px' }}>
-                <div style={{
-                  backgroundColor: '#445566',
-                  padding: '25px',
-                  borderRadius: '10px',
-                  border: '2px solid #4ECDC4'
-                }}>
-                  <h4 style={{ color: '#4ECDC4', margin: '0 0 15px 0' }}>💰 Score Stats</h4>
-                  <p><strong>Total Score:</strong> {score} 🦐</p>
-                  <p><strong>XAN Tokens:</strong> {xanTokens} XAN</p>
-                  <p><strong>Game Score:</strong> {gameScore} 🦐</p>
-                  <p><strong>High Score:</strong> {highScore} 🦐</p>
-                </div>
-                
-                <div style={{
-                  backgroundColor: '#445566',
-                  padding: '25px',
-                  borderRadius: '10px',
-                  border: '2px solid #FF6B6B'
-                }}>
-                  <h4 style={{ color: '#FF6B6B', margin: '0 0 15px 0' }}>🎯 Game Stats</h4>
-                  <p><strong>Shrimp Caught:</strong> {shrimpCaught}</p>
-                  <p><strong>Current Combo:</strong> x{combo}</p>
-                  <p><strong>Active Power-ups:</strong> {activePowerUps.length}</p>
-                </div>
-                
-                <div style={{
-                  backgroundColor: '#445566',
-                  padding: '25px',
-                  borderRadius: '10px',
-                  border: '2px solid #FFD93D'
-                }}>
-                  <h4 style={{ color: '#FFD93D', margin: '0 0 15px 0' }}>🎨 Current Setup</h4>
-                  <p><strong>Active Skin:</strong> {currentSkin.name}</p>
-                  <p><strong>Points Multiplier:</strong> x{currentSkin.multiplier}</p>
-                  <p><strong>Skin Color:</strong> <span style={{ color: currentSkin.color }}>●</span></p>
-                </div>
-
-                <div style={{
-                  backgroundColor: '#445566',
-                  padding: '25px',
-                  borderRadius: '10px',
-                  border: '2px solid #FF6B35'
-                }}>
-                  <h4 style={{ color: '#FF6B35', margin: '0 0 15px 0' }}>🖼️ NFT Collection</h4>
-                  <p><strong>NFTs Owned:</strong> {playerNFTs.length}</p>
-                  <p><strong>NFTs Listed:</strong> {nftListings.filter(l => l.seller === 'You').length}</p>
-                  <p><strong>Total Trades:</strong> {nftTradingHistory.length}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default App;ifyContent: 'center',
+                          justifyContent: 'center',
                           fontSize: '24px'
                         }}>
                           🖼️
@@ -1074,7 +920,7 @@ export default App;ifyContent: 'center',
                   borderRadius: '15px',
                   border: '2px solid #27AE60' 
                 }}>
-                  <h4 style={{ color: '#27AE60', marginTop: '0' }}>🎒 My Collection</h4>
+                  <h4 style={{ color: '#27AE60', marginTop: '0' }}>🎁 My Collection</h4>
                   <p style={{ color: '#BDC3C7', marginBottom: '20px', fontSize: '14px' }}>
                     Your owned NFTs - Click to list for sale
                   </p>
@@ -1529,8 +1375,7 @@ export default App;ifyContent: 'center',
                     border: currentSkin.name === skin.name ? '3px solid #4ECDC4' : '2px solid transparent',
                     display: 'flex',
                     alignItems: 'center',
-                    just}
-justifyContent: 'space-between'
+                    justifyContent: 'space-between'
                   }}>
                     <div style={{ textAlign: 'left' }}>
                       <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px' }}>
@@ -1563,6 +1408,118 @@ justifyContent: 'space-between'
                     </button>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Power-ups Tab */}
+          {activeTab === 'powerups' && (
+            <div>
+              <h3 style={{ color: '#FFD93D', marginTop: '0' }}>⚡ Power-ups Store</h3>
+              <p style={{ marginBottom: '20px' }}>
+                Boost your shrimp catching abilities with these temporary power-ups!
+                <br />
+                <span style={{ color: '#E74C3C', fontSize: '14px' }}>⚠️ All purchases require 1 XAN token as transaction fee</span>
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
+                {POWER_UPS.map(powerUp => (
+                  <div key={powerUp.name} style={{
+                    backgroundColor: '#445566',
+                    padding: '20px',
+                    borderRadius: '10px',
+                    border: '2px solid #FFD93D',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px', color: '#FFD93D' }}>
+                        ⚡ {powerUp.name}
+                      </div>
+                      <div style={{ color: '#ccc', fontSize: '14px', marginBottom: '5px' }}>
+                        Duration: {powerUp.duration / 1000} seconds
+                      </div>
+                      <div style={{ color: '#4ECDC4', fontSize: '16px' }}>
+                        {powerUp.cost} 🦐 + 1 XAN fee
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => buyPowerUp(powerUp)}
+                      disabled={score < powerUp.cost || xanTokens < 1}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: (score >= powerUp.cost && xanTokens >= 1) ? '#FFD93D' : '#666',
+                        color: (score >= powerUp.cost && xanTokens >= 1) ? '#001122' : '#ccc',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: (score >= powerUp.cost && xanTokens >= 1) ? 'pointer' : 'not-allowed',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      BUY
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Stats Tab */}
+          {activeTab === 'stats' && (
+            <div>
+              <h3 style={{ color: '#A8E6CF', marginTop: '0' }}>📊 Game Statistics</h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginTop: '30px' }}>
+                <div style={{
+                  backgroundColor: '#445566',
+                  padding: '25px',
+                  borderRadius: '10px',
+                  border: '2px solid #4ECDC4'
+                }}>
+                  <h4 style={{ color: '#4ECDC4', margin: '0 0 15px 0' }}>💰 Score Stats</h4>
+                  <p><strong>Total Score:</strong> {score} 🦐</p>
+                  <p><strong>XAN Tokens:</strong> {xanTokens} XAN</p>
+                  <p><strong>Game Score:</strong> {gameScore} 🦐</p>
+                  <p><strong>High Score:</strong> {highScore} 🦐</p>
+                </div>
+                
+                <div style={{
+                  backgroundColor: '#445566',
+                  padding: '25px',
+                  borderRadius: '10px',
+                  border: '2px solid #FF6B6B'
+                }}>
+                  <h4 style={{ color: '#FF6B6B', margin: '0 0 15px 0' }}>🎯 Game Stats</h4>
+                  <p><strong>Shrimp Caught:</strong> {shrimpCaught}</p>
+                  <p><strong>Current Combo:</strong> x{combo}</p>
+                  <p><strong>Active Power-ups:</strong> {activePowerUps.length}</p>
+                </div>
+                
+                <div style={{
+                  backgroundColor: '#445566',
+                  padding: '25px',
+                  borderRadius: '10px',
+                  border: '2px solid #FFD93D'
+                }}>
+                  <h4 style={{ color: '#FFD93D', margin: '0 0 15px 0' }}>🎨 Current Setup</h4>
+                  <p><strong>Active Skin:</strong> {currentSkin.name}</p>
+                  <p><strong>Points Multiplier:</strong> x{currentSkin.multiplier}</p>
+                  <p><strong>Skin Color:</strong> <span style={{ color: currentSkin.color }}>●</span></p>
+                </div>
+
+                <div style={{
+                  backgroundColor: '#445566',
+                  padding: '25px',
+                  borderRadius: '10px',
+                  border: '2px solid #FF6B35'
+                }}>
+                  <h4 style={{ color: '#FF6B35', margin: '0 0 15px 0' }}>🖼️ NFT Collection</h4>
+                  <p><strong>NFTs Owned:</strong> {playerNFTs.length}</p>
+                  <p><strong>NFTs Listed:</strong> {nftListings.filter(l => l.seller === 'You').length}</p>
+                  <p><strong>Total Trades:</strong> {nftTradingHistory.length}</p>
+                </div>
               </div>
             </div>
           )}
