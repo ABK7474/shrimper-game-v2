@@ -39,6 +39,15 @@ function App() {
   // Tab state
   const [activeTab, setActiveTab] = useState('market');
   
+  // Crypto wallet state
+  const [cryptoBalances, setCryptoBalances] = useState(() => ({
+    XAN: Number(localStorage.getItem("xan-tokens")) || 0,
+    ETH: Number(localStorage.getItem("eth-balance")) || 2.5,
+    SOL: Number(localStorage.getItem("sol-balance")) || 15.8,
+    BTC: Number(localStorage.getItem("btc-balance")) || 0.1,
+    USDC: Number(localStorage.getItem("usdc-balance")) || 1000
+  }));
+  
   // Game state
   const [score, setScore] = useState(() => 
     Number(localStorage.getItem("shrimp-score")) || 0
@@ -69,15 +78,24 @@ function App() {
   const shrimpIdRef = useRef(0);
   const particleIdRef = useRef(0);
 
+  // Save balances to localStorage
+  useEffect(() => {
+    localStorage.setItem("xan-tokens", xanTokens.toString());
+    localStorage.setItem("eth-balance", cryptoBalances.ETH.toString());
+    localStorage.setItem("sol-balance", cryptoBalances.SOL.toString());
+    localStorage.setItem("btc-balance", cryptoBalances.BTC.toString());
+    localStorage.setItem("usdc-balance", cryptoBalances.USDC.toString());
+    setCryptoBalances(prev => ({ ...prev, XAN: xanTokens }));
+  }, [xanTokens, cryptoBalances.ETH, cryptoBalances.SOL, cryptoBalances.BTC, cryptoBalances.USDC]);
+
   // Save score to localStorage
   useEffect(() => {
     localStorage.setItem("shrimp-score", score.toString());
-    localStorage.setItem("xan-tokens", xanTokens.toString());
     if (score > highScore) {
       setHighScore(score);
       localStorage.setItem("shrimp-high", score.toString());
     }
-  }, [score, xanTokens, highScore]);
+  }, [score, highScore]);
 
   // Generate random shrimp
   const createShrimp = useCallback(() => {
@@ -145,6 +163,69 @@ function App() {
     setShrimp(prev => prev.filter(s => s.id !== shrimpId));
   }, [shrimp, currentSkin, combo, activePowerUps, createParticles, playSound]);
 
+  // One-click crypto swap function
+  const oneClickSwap = useCallback((fromToken, toToken, amount) => {
+    if (cryptoBalances[fromToken] >= amount) {
+      playSound('purchase', 0.4);
+      
+      // Simple exchange rates (demo purposes)
+      const exchangeRates = {
+        'ETH-SOL': 8.5, 'SOL-ETH': 0.12,
+        'ETH-BTC': 0.065, 'BTC-ETH': 15.4,
+        'ETH-USDC': 2500, 'USDC-ETH': 0.0004,
+        'SOL-USDC': 140, 'USDC-SOL': 0.007,
+        'BTC-USDC': 42000, 'USDC-BTC': 0.000024
+      };
+      
+      const rate = exchangeRates[`${fromToken}-${toToken}`] || 1;
+      const amountReceived = amount * rate;
+      
+      setCryptoBalances(prev => ({
+        ...prev,
+        [fromToken]: prev[fromToken] - amount,
+        [toToken]: prev[toToken] + amountReceived
+      }));
+      
+      alert(`✅ Swap successful! Exchanged ${amount} ${fromToken} for ${amountReceived.toFixed(4)} ${toToken}`);
+    } else {
+      playSound('error', 0.2);
+      alert(`❌ Insufficient ${fromToken} balance!`);
+    }
+  }, [cryptoBalances, playSound]);
+
+  // One-click send function
+  const oneClickSend = useCallback((token, amount, address) => {
+    if (cryptoBalances[token] >= amount && address.trim()) {
+      playSound('purchase', 0.4);
+      
+      setCryptoBalances(prev => ({
+        ...prev,
+        [token]: prev[token] - amount
+      }));
+      
+      alert(`✅ Successfully sent ${amount} ${token} to ${address}`);
+    } else if (!address.trim()) {
+      playSound('error', 0.2);
+      alert('❌ Please enter a valid address!');
+    } else {
+      playSound('error', 0.2);
+      alert(`❌ Insufficient ${token} balance!`);
+    }
+  }, [cryptoBalances, playSound]);
+
+  // Convert score to XAN tokens
+  const convertToXAN = useCallback((amount) => {
+    const scoreNeeded = amount * 5; // 5 score = 1 XAN
+    if (score >= scoreNeeded) {
+      playSound('purchase', 0.3);
+      setScore(prev => prev - scoreNeeded);
+      setXanTokens(prev => prev + amount);
+    } else {
+      playSound('error', 0.2);
+      alert("Not enough points to convert!");
+    }
+  }, [score, playSound]);
+
   // Buy skin
   const buySkin = useCallback((skin) => {
     if (score >= skin.cost && xanTokens >= 1) {
@@ -178,19 +259,6 @@ function App() {
       }
     }
   }, [score, xanTokens, playSound]);
-
-  // Convert score to XAN tokens
-  const convertToXAN = useCallback((amount) => {
-    const scoreNeeded = amount * 5; // 5 score = 1 XAN
-    if (score >= scoreNeeded) {
-      playSound('purchase', 0.3);
-      setScore(prev => prev - scoreNeeded);
-      setXanTokens(prev => prev + amount);
-    } else {
-      playSound('error', 0.2);
-      alert("Not enough points to convert!");
-    }
-  }, [score, playSound]);
 
   // Start game
   const startGame = useCallback(() => {
@@ -458,6 +526,12 @@ function App() {
             🔄 Intent Machine
           </button>
           <button
+            onClick={() => setActiveTab('convert')}
+            style={getTabButtonStyle('convert')}
+          >
+            💱 Convert
+          </button>
+          <button
             onClick={() => setActiveTab('market')}
             style={getTabButtonStyle('market')}
           >
@@ -483,6 +557,221 @@ function App() {
           {activeTab === 'intentmachine' && (
             <div>
               <h3 style={{ color: '#9B59B6', marginTop: '0' }}>🔄 Intent Machine</h3>
+              <p style={{ marginBottom: '30px', fontSize: '16px', lineHeight: '1.6' }}>
+                Your personal crypto wallet with one-click operations. No more complex multi-step transactions!
+                Execute swaps, transfers, and more with a single click.
+              </p>
+              
+              {/* Wallet Balance */}
+              <div style={{ 
+                backgroundColor: '#2C3E50', 
+                padding: '25px', 
+                borderRadius: '15px', 
+                marginBottom: '30px',
+                border: '2px solid #9B59B6' 
+              }}>
+                <h4 style={{ color: '#9B59B6', marginTop: '0' }}>💰 Wallet Balance</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
+                  <div style={{ textAlign: 'center', backgroundColor: '#34495E', padding: '15px', borderRadius: '10px' }}>
+                    <div style={{ color: '#9B59B6', fontSize: '16px', fontWeight: 'bold' }}>XAN</div>
+                    <div style={{ color: '#ECF0F1', fontSize: '20px' }}>{cryptoBalances.XAN}</div>
+                  </div>
+                  <div style={{ textAlign: 'center', backgroundColor: '#34495E', padding: '15px', borderRadius: '10px' }}>
+                    <div style={{ color: '#3498DB', fontSize: '16px', fontWeight: 'bold' }}>ETH</div>
+                    <div style={{ color: '#ECF0F1', fontSize: '20px' }}>{cryptoBalances.ETH.toFixed(3)}</div>
+                  </div>
+                  <div style={{ textAlign: 'center', backgroundColor: '#34495E', padding: '15px', borderRadius: '10px' }}>
+                    <div style={{ color: '#E67E22', fontSize: '16px', fontWeight: 'bold' }}>SOL</div>
+                    <div style={{ color: '#ECF0F1', fontSize: '20px' }}>{cryptoBalances.SOL.toFixed(2)}</div>
+                  </div>
+                  <div style={{ textAlign: 'center', backgroundColor: '#34495E', padding: '15px', borderRadius: '10px' }}>
+                    <div style={{ color: '#F39C12', fontSize: '16px', fontWeight: 'bold' }}>BTC</div>
+                    <div style={{ color: '#ECF0F1', fontSize: '20px' }}>{cryptoBalances.BTC.toFixed(4)}</div>
+                  </div>
+                  <div style={{ textAlign: 'center', backgroundColor: '#34495E', padding: '15px', borderRadius: '10px' }}>
+                    <div style={{ color: '#27AE60', fontSize: '16px', fontWeight: 'bold' }}>USDC</div>
+                    <div style={{ color: '#ECF0F1', fontSize: '20px' }}>{cryptoBalances.USDC.toFixed(0)}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px' }}>
+                {/* One-Click Swaps */}
+                <div style={{ 
+                  backgroundColor: '#445566', 
+                  padding: '25px', 
+                  borderRadius: '15px',
+                  border: '2px solid #3498DB' 
+                }}>
+                  <h4 style={{ color: '#3498DB', marginTop: '0' }}>🔄 One-Click Swaps</h4>
+                  <p style={{ color: '#BDC3C7', marginBottom: '20px', fontSize: '14px' }}>
+                    Instantly swap between tokens without multiple approvals and signatures
+                  </p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <button
+                      onClick={() => oneClickSwap('ETH', 'SOL', 0.1)}
+                      disabled={cryptoBalances.ETH < 0.1}
+                      style={{
+                        padding: '15px',
+                        backgroundColor: cryptoBalances.ETH >= 0.1 ? '#3498DB' : '#7F8C8D',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: cryptoBalances.ETH >= 0.1 ? 'pointer' : 'not-allowed',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <span>0.1 ETH → SOL</span>
+                      <span>≈ 0.85 SOL</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => oneClickSwap('SOL', 'ETH', 5)}
+                      disabled={cryptoBalances.SOL < 5}
+                      style={{
+                        padding: '15px',
+                        backgroundColor: cryptoBalances.SOL >= 5 ? '#E67E22' : '#7F8C8D',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: cryptoBalances.SOL >= 5 ? 'pointer' : 'not-allowed',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <span>5 SOL → ETH</span>
+                      <span>≈ 0.6 ETH</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => oneClickSwap('USDC', 'BTC', 500)}
+                      disabled={cryptoBalances.USDC < 500}
+                      style={{
+                        padding: '15px',
+                        backgroundColor: cryptoBalances.USDC >= 500 ? '#27AE60' : '#7F8C8D',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: cryptoBalances.USDC >= 500 ? 'pointer' : 'not-allowed',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <span>500 USDC → BTC</span>
+                      <span>≈ 0.012 BTC</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* One-Click Sends */}
+                <div style={{ 
+                  backgroundColor: '#445566', 
+                  padding: '25px', 
+                  borderRadius: '15px',
+                  border: '2px solid #E74C3C' 
+                }}>
+                  <h4 style={{ color: '#E74C3C', marginTop: '0' }}>📤 One-Click Send</h4>
+                  <p style={{ color: '#BDC3C7', marginBottom: '20px', fontSize: '14px' }}>
+                    Send tokens to any address instantly without gas fee calculations
+                  </p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <button
+                      onClick={() => {
+                        const address = prompt('Enter recipient address:');
+                        if (address) oneClickSend('ETH', 0.05, address);
+                      }}
+                      disabled={cryptoBalances.ETH < 0.05}
+                      style={{
+                        padding: '15px',
+                        backgroundColor: cryptoBalances.ETH >= 0.05 ? '#E74C3C' : '#7F8C8D',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: cryptoBalances.ETH >= 0.05 ? 'pointer' : 'not-allowed',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Send 0.05 ETH
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        const address = prompt('Enter recipient address:');
+                        if (address) oneClickSend('SOL', 2, address);
+                      }}
+                      disabled={cryptoBalances.SOL < 2}
+                      style={{
+                        padding: '15px',
+                        backgroundColor: cryptoBalances.SOL >= 2 ? '#E67E22' : '#7F8C8D',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: cryptoBalances.SOL >= 2 ? 'pointer' : 'not-allowed',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Send 2 SOL
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        const address = prompt('Enter recipient address:');
+                        if (address) oneClickSend('USDC', 100, address);
+                      }}
+                      disabled={cryptoBalances.USDC < 100}
+                      style={{
+                        padding: '15px',
+                        backgroundColor: cryptoBalances.USDC >= 100 ? '#27AE60' : '#7F8C8D',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: cryptoBalances.USDC >= 100 ? 'pointer' : 'not-allowed',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Send 100 USDC
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ 
+                backgroundColor: '#1ABC9C', 
+                padding: '20px', 
+                borderRadius: '10px', 
+                marginTop: '30px',
+                border: '1px solid #16A085'
+              }}>
+                <h4 style={{ color: '#fff', marginTop: '0' }}>💡 Intent Machine Benefits</h4>
+                <ul style={{ margin: '0', color: '#fff', textAlign: 'left' }}>
+                  <li>✅ One-click swaps - No multiple approvals needed</li>
+                  <li>✅ Instant transfers - No gas fee calculations</li>
+                  <li>✅ Smart routing - Always get the best rates</li>
+                  <li>✅ Cross-chain ready - Seamless multi-blockchain operations</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Convert Tab */}
+          {activeTab === 'convert' && (
+            <div>
+              <h3 style={{ color: '#9B59B6', marginTop: '0' }}>💱 Convert Points to XAN</h3>
               <p style={{ marginBottom: '30px', fontSize: '16px', lineHeight: '1.6' }}>
                 Convert your earned points to XAN tokens! XAN tokens are required as transaction fees 
                 for all purchases in the Market and Power-ups sections.
